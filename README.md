@@ -1,6 +1,14 @@
 # RazenNotes
 
 A modern, feature-rich todo and note-taking application built with React, TypeScript, and Convex for seamless real-time collaboration and data management.
+<img width="840" height="913" alt="image" src="https://github.com/user-attachments/assets/c27754b9-529b-4a56-8c6b-43d9139823b3" />
+<img width="850" height="1363" alt="image" src="https://github.com/user-attachments/assets/2f28123a-4079-469b-8051-57e424a76546" />
+<img width="777" height="411" alt="image" src="https://github.com/user-attachments/assets/2ec2862d-e625-4571-a1e6-35db7e367ffa" />
+<img width="777" height="395" alt="image" src="https://github.com/user-attachments/assets/78a638fb-d99e-4b97-8a7a-1af724aaab6e" />
+
+
+
+
 
 ## Features
 
