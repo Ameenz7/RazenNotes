@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Archive, Search } from "lucide-react";
+import { Archive, Search, CheckSquare } from "lucide-react";
 import { toast } from "sonner";
 
 export function TodoList() {
@@ -68,7 +68,10 @@ export function TodoList() {
       <Card>
         <CardHeader>
           <CardTitle className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-            <span>Todo List</span>
+            <div className="flex items-center gap-2">
+              <CheckSquare className="h-5 w-5" />
+              <span>Todo List</span>
+            </div>
             <div className="flex flex-wrap gap-2">
               <Badge variant="secondary">
                 {activeCount} active
