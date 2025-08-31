@@ -54,6 +54,9 @@ export function TodoItem({
   const deleteTodo = useMutation(api.todos.deleteTodo);
   const createSubtask = useMutation(api.todos.createSubtask);
 
+  // Get categories for resolving category names
+  const categories = useQuery(api.todos.getCategories) || [];
+
   // Get subtasks for this todo
   const allTodos = useQuery(api.todos.getTodos, { includeArchived: true }) || [];
   const currentTodo = allTodos.find(todo => todo._id === id);
@@ -61,6 +64,13 @@ export function TodoItem({
   const subtasks = allTodos
     .filter(todo => todo.parentId === id)
     .sort((a, b) => (a.order || 0) - (b.order || 0));
+
+  // Get category name from categoryId
+  const getCategoryName = (categoryId?: string) => {
+    if (!categoryId) return category; // fallback to string category
+    const cat = categories.find(c => c._id === categoryId);
+    return cat?.name || category;
+  };
 
   const handleToggle = () => {
     // Use completeRecurringTask for recurring task instances
@@ -81,6 +91,7 @@ export function TodoItem({
         archived?: boolean;
         priority?: "low" | "medium" | "high";
         category?: string;
+        categoryId?: Id<"categories">;
         dueDate?: number;
       } = {};
 
@@ -108,8 +119,14 @@ export function TodoItem({
         updates.priority = editPriority;
       }
 
-      if (editCategory !== (category || "")) {
-        updates.category = editCategory.trim() || undefined;
+      if (editCategory !== (currentTodo?.categoryId || "")) {
+        if (editCategory) {
+          updates.categoryId = editCategory as Id<"categories">;
+          updates.category = undefined; // Clear the old string field
+        } else {
+          updates.categoryId = undefined;
+          updates.category = undefined;
+        }
       }
 
       if (editDueDate !== (dueDate ? new Date(dueDate).toISOString().split('T')[0] : "")) {
@@ -126,7 +143,7 @@ export function TodoItem({
       setEditText(text);
       setEditStatus(isArchived ? "archived" : completed ? "completed" : "active");
       setEditPriority(priority);
-      setEditCategory(category || "");
+      setEditCategory(currentTodo?.categoryId || category || "");
       setEditDueDate(dueDate ? new Date(dueDate).toISOString().split('T')[0] : "");
       setIsEditing(true);
     }
@@ -136,7 +153,7 @@ export function TodoItem({
     setEditText(text);
     setEditStatus(isArchived ? "archived" : completed ? "completed" : "active");
     setEditPriority(priority);
-    setEditCategory(category || "");
+    setEditCategory(currentTodo?.categoryId || category || "");
     setEditDueDate(dueDate ? new Date(dueDate).toISOString().split('T')[0] : "");
     setIsEditing(false);
   };
@@ -237,12 +254,22 @@ export function TodoItem({
 
                 <div>
                   <label className="text-xs font-medium text-muted-foreground">Category</label>
-                  <Input
+                  <Select
                     value={editCategory}
-                    onChange={(e) => setEditCategory(e.target.value)}
-                    placeholder="Category"
-                    className="h-8"
-                  />
+                    onValueChange={(value) => setEditCategory(value === "none" ? "" : value)}
+                  >
+                    <SelectTrigger className="h-8">
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No category</SelectItem>
+                      {categories.map((cat) => (
+                        <SelectItem key={cat._id} value={cat._id}>
+                          {cat.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div>
@@ -299,10 +326,10 @@ export function TodoItem({
                   {priority}
                 </Badge>
 
-                {category && (
+                {(category || currentTodo?.categoryId) && (
                   <Badge variant="outline" className="text-xs">
                     <Tag className="h-3 w-3 mr-1" />
-                    {category}
+                    {getCategoryName(currentTodo?.categoryId)}
                   </Badge>
                 )}
 
@@ -326,7 +353,7 @@ export function TodoItem({
                 {(isRecurring || parentRecurringId) && (
                   <Badge variant="outline" className="text-xs">
                     <Repeat className="h-3 w-3 mr-1" />
-                    {isRecurring ? "Recurring" : "Recurring"}
+                    {isRecurring ? "Recurring Task" : "Recurring Instance"}
                   </Badge>
                 )}
               </div>

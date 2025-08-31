@@ -13,6 +13,7 @@ import { toast } from "sonner";
 
 export function TodoList() {
   const todosQuery = useQuery(api.todos.getTodos, { includeArchived: true });
+  const categoriesQuery = useQuery(api.todos.getCategories);
   const allTodos = useMemo(() => todosQuery || [], [todosQuery]);
   const todos = allTodos.filter(todo => !todo.isSubtask); // Main todos only
   const archiveCompletedTodos = useMutation(api.todos.archiveCompletedTodos);
@@ -39,7 +40,9 @@ export function TodoList() {
       const matchesPriority = priorityFilter === "all" || todo.priority === priorityFilter;
 
       // Category filter
-      const matchesCategory = categoryFilter === "all" || todo.category === categoryFilter;
+      const matchesCategory = categoryFilter === "all" ||
+        (todo.categoryId && todo.categoryId === categoryFilter) ||
+        (todo.category && todo.category === categoryFilter);
 
       return matchesSearch && matchesStatus && matchesPriority && matchesCategory;
     });
@@ -51,10 +54,9 @@ export function TodoList() {
   const activeCount = totalCount - completedCount - archivedCount;
   const filteredCount = filteredTodos.length;
 
-  const categories = useMemo(() => {
-    const uniqueCategories = new Set(todos.map(todo => todo.category).filter((category): category is string => Boolean(category)));
-    return Array.from(uniqueCategories);
-  }, [todos]);
+  const categoriesList = useMemo(() => {
+    return categoriesQuery || [];
+  }, [categoriesQuery]);
 
   const handleArchiveCompleted = () => {
     archiveCompletedTodos();
@@ -146,9 +148,9 @@ export function TodoList() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Categories</SelectItem>
-                      {categories.map((category) => (
-                        <SelectItem key={category} value={category}>
-                          {category}
+                      {categoriesList.map((category) => (
+                        <SelectItem key={category._id} value={category._id}>
+                          {category.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -197,8 +199,8 @@ export function TodoList() {
                 onClick={handleArchiveCompleted}
                 className="text-muted-foreground hover:text-foreground"
               >
-                                                  <Archive className="h-4 w-4 mr-2" />
-                 Archive {completedCount} completed {completedCount === 1 ? 'task' : 'tasks'}
+                <Archive className="h-4 w-4 mr-2" />
+                Archive {completedCount} completed {completedCount === 1 ? 'task' : 'tasks'}
               </Button>
             </div>
           )}

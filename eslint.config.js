@@ -6,7 +6,22 @@ import tseslint from 'typescript-eslint'
 import { globalIgnores } from 'eslint/config'
 
 export default tseslint.config([
-  globalIgnores(['dist']),
+  globalIgnores([
+    'dist',
+    'convex/_generated/',
+    '.yoyo/',
+    'node_modules/',
+    '.env*',
+    '!.env.example',
+    '*.log',
+    'npm-debug.log*',
+    'yarn-debug.log*',
+    'yarn-error.log*',
+    '.vscode/',
+    '.idea/',
+    '.DS_Store',
+    'Thumbs.db'
+  ]),
   {
     files: ['**/*.{ts,tsx}'],
     extends: [

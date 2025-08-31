@@ -7,8 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Combobox } from "@/components/ui/combobox";
-import { Plus, Calendar, Tag, Repeat } from "lucide-react";
+import { Plus, Calendar, Tag, Repeat, Tags } from "lucide-react";
 import { toast } from "sonner";
 
 export function AddTodo() {
@@ -17,6 +16,8 @@ export function AddTodo() {
   const [categoryId, setCategoryId] = useState<string>("");
   const [dueDate, setDueDate] = useState("");
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [showNewCategoryInput, setShowNewCategoryInput] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
 
   // Recurring task state
   const [isRecurring, setIsRecurring] = useState(false);
@@ -27,6 +28,7 @@ export function AddTodo() {
   const [recurrenceDayOfMonth, setRecurrenceDayOfMonth] = useState<number | undefined>();
 
   const createTodo = useMutation(api.todos.createTodo);
+  const createCategory = useMutation(api.todos.createCategory);
   const categories = useQuery(api.todos.getCategories) || [];
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -65,12 +67,33 @@ export function AddTodo() {
       setRecurrenceDaysOfWeek([]);
       setRecurrenceDayOfMonth(undefined);
       setShowAdvanced(false);
+      setShowNewCategoryInput(false);
+      setNewCategoryName("");
     }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       handleSubmit(e);
+    }
+  };
+
+  const handleCreateCategory = async () => {
+    if (newCategoryName.trim()) {
+      const categoryId = await createCategory({ name: newCategoryName.trim() });
+      setCategoryId(categoryId);
+      setNewCategoryName("");
+      setShowNewCategoryInput(false);
+      toast.success("Category created successfully!");
+    }
+  };
+
+  const handleNewCategoryKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      handleCreateCategory();
+    } else if (e.key === "Escape") {
+      setShowNewCategoryInput(false);
+      setNewCategoryName("");
     }
   };
 
@@ -131,14 +154,60 @@ export function AddTodo() {
         <div className="space-y-4 p-4 bg-muted/50 rounded-lg">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium">Category</label>
-              <Combobox
-                value={categoryId}
-                onValueChange={setCategoryId}
-                placeholder="e.g., Work, Personal, Shopping"
-                options={categories.map(cat => cat.name)}
-                categoryIds={categories.map(cat => cat._id)}
-              />
+              <label className="text-sm font-medium flex items-center gap-2">
+                <Tags className="h-4 w-4" />
+                Category
+              </label>
+              {!showNewCategoryInput ? (
+                <Select value={categoryId} onValueChange={(value) => {
+                  if (value === "new") {
+                    setShowNewCategoryInput(true);
+                  } else {
+                    setCategoryId(value);
+                  }
+                }}>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Select a category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map((category) => (
+                      <SelectItem key={category._id} value={category._id}>
+                        {category.name}
+                      </SelectItem>
+                    ))}
+                    <SelectItem value="new" className="text-primary">
+                      + Add new category
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              ) : (
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="New category name"
+                    value={newCategoryName}
+                    onChange={(e) => setNewCategoryName(e.target.value)}
+                    onKeyDown={handleNewCategoryKeyPress}
+                    autoFocus
+                  />
+                  <Button
+                    size="sm"
+                    onClick={handleCreateCategory}
+                    disabled={!newCategoryName.trim()}
+                  >
+                    Add
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setShowNewCategoryInput(false);
+                      setNewCategoryName("");
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">

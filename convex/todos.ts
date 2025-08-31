@@ -56,6 +56,7 @@ export const deleteCategory = mutation({
   },
 });
 
+
 // Create a new todo
 export const createTodo = mutation({
   args: {
@@ -299,23 +300,6 @@ export const canCompleteSubtask = query({
   },
 });
 
-// Archive a todo
-export const archiveTodo = mutation({
-  args: { id: v.id("todos") },
-  handler: async (ctx, args) => {
-    const { id } = args;
-    await ctx.db.patch(id, { archived: true });
-  },
-});
-
-// Unarchive a todo
-export const unarchiveTodo = mutation({
-  args: { id: v.id("todos") },
-  handler: async (ctx, args) => {
-    const { id } = args;
-    await ctx.db.patch(id, { archived: false });
-  },
-});
 
 // Archive all completed main todos
 export const archiveCompletedTodos = mutation({
@@ -327,62 +311,7 @@ export const archiveCompletedTodos = mutation({
   },
 });
 
-// Clear all completed todos (delete permanently)
-export const clearCompletedTodos = mutation({
-  args: {},
-  handler: async (ctx) => {
-    const todos = await ctx.db.query("todos").collect();
-    const completedTodos = todos.filter(todo => todo.completed);
-    await Promise.all(completedTodos.map(todo => ctx.db.delete(todo._id)));
-  },
-});
 
-// Get recurring tasks
-export const getRecurringTasks = query({
-  args: {},
-  handler: async (ctx) => {
-    return await ctx.db
-      .query("todos")
-      .filter((q) => q.eq(q.field("isRecurring"), true))
-      .collect();
-  },
-});
-
-// Create next recurring task instance
-export const createNextRecurringInstance = mutation({
-  args: {
-    recurringTaskId: v.id("todos"),
-  },
-  handler: async (ctx, args) => {
-    const { recurringTaskId } = args;
-
-    const recurringTask = await ctx.db.get(recurringTaskId);
-    if (!recurringTask || !recurringTask.isRecurring) {
-      throw new Error("Recurring task not found");
-    }
-
-    const nextDueDate = calculateNextDueDate(recurringTask);
-
-    if (!nextDueDate) {
-      // Recurrence has ended
-      return null;
-    }
-
-    // Create new instance
-    const newInstanceId = await ctx.db.insert("todos", {
-      text: recurringTask.text,
-      completed: false,
-      createdAt: Date.now(),
-      priority: recurringTask.priority,
-      categoryId: recurringTask.categoryId,
-      dueDate: nextDueDate,
-      tags: recurringTask.tags,
-      parentRecurringId: recurringTaskId,
-    });
-
-    return newInstanceId;
-  },
-});
 
 // Helper function to calculate next due date
 function calculateNextDueDate(task: {
@@ -496,37 +425,3 @@ export const completeRecurringTask = mutation({
   },
 });
 
-// Migration: Convert category string to categoryId
-export const migrateCategoryToCategoryId = mutation({
-  args: {},
-  handler: async (ctx) => {
-    const todos = await ctx.db.query("todos").collect();
-    const todosWithCategory = todos.filter(todo => todo.category && !todo.categoryId);
-
-    for (const todo of todosWithCategory) {
-      // Find or create category
-      let category = await ctx.db
-        .query("categories")
-        .filter((q) => q.eq(q.field("name"), todo.category))
-        .first();
-
-      if (!category) {
-        // Create new category
-        const categoryId = await ctx.db.insert("categories", {
-          name: todo.category!,
-        });
-        category = await ctx.db.get(categoryId);
-      }
-
-      if (category) {
-        // Update todo with categoryId and remove category
-        await ctx.db.patch(todo._id, {
-          categoryId: category._id,
-          category: undefined,
-        });
-      }
-    }
-
-    return { migrated: todosWithCategory.length };
-  },
-});
